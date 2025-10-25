@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sefan A.I – Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg-color: #f5f5f5;
+        --card-bg: rgba(255, 255, 255, 0.9);
+        --panel-bg: rgba(255, 255, 255, 0.65);
+        --text-color: #1f2933;
+        --accent: #5865f2;
+        --accent-contrast: #ffffff;
+        --muted: #6b7a90;
+        --shadow: 0 24px 48px rgba(15, 23, 42, 0.1);
+        --border: rgba(148, 163, 184, 0.18);
+        font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      :root.dark {
+        --bg-color: #050816;
+        --card-bg: rgba(15, 23, 42, 0.7);
+        --panel-bg: rgba(15, 23, 42, 0.55);
+        --text-color: #f8fafc;
+        --accent: #8b5cf6;
+        --accent-contrast: #0b0f1f;
+        --muted: #94a3b8;
+        --shadow: 0 24px 48px rgba(8, 47, 73, 0.45);
+        --border: rgba(94, 106, 143, 0.45);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        background: radial-gradient(
+            circle at top,
+            rgba(88, 101, 242, 0.12),
+            transparent 55%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(139, 92, 246, 0.18),
+            transparent 40%
+          ),
+          var(--bg-color);
+        color: var(--text-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(1.5rem, 3vw, 3rem);
+        transition: background 300ms ease, color 300ms ease;
+      }
+
+      .chat-shell {
+        width: min(1040px, 100%);
+        display: grid;
+        gap: 1.75rem;
+        background-color: var(--card-bg);
+        border-radius: 28px;
+        padding: clamp(1.5rem, 3vw, 2.5rem);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .brand h1 {
+        font-size: clamp(1.85rem, 5vw, 2.5rem);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .brand span {
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .theme-toggle,
+      .back-link {
+        border: none;
+        padding: 0.65rem 1rem;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--accent-contrast);
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: transform 150ms ease, box-shadow 150ms ease;
+        box-shadow: 0 12px 20px rgba(88, 101, 242, 0.25);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .theme-toggle:hover,
+      .back-link:hover {
+        transform: translateY(-1px);
+      }
+
+      .theme-toggle svg {
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .chat-window {
+        background: var(--panel-bg);
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: clamp(460px, 70vh, 680px);
+        overflow: hidden;
+      }
+
+      .chat-transcript {
+        padding: 1.5rem;
+        overflow-y: auto;
+        display: grid;
+        gap: 1.25rem;
+        align-content: start;
+      }
+
+      .message {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.75rem;
+        align-items: start;
+      }
+
+      .message.user {
+        grid-template-columns: 1fr auto;
+        justify-items: end;
+      }
+
+      .message.user .bubble {
+        text-align: right;
+      }
+
+      .bubble {
+        padding: 1rem 1.15rem;
+        border-radius: 20px;
+        background: rgba(88, 101, 242, 0.1);
+        color: var(--text-color);
+        line-height: 1.6;
+        font-size: 0.98rem;
+        border: 1px solid rgba(88, 101, 242, 0.15);
+      }
+
+      :root.dark .bubble {
+        background: rgba(139, 92, 246, 0.12);
+        border-color: rgba(139, 92, 246, 0.2);
+      }
+
+      .message.user .bubble {
+        background: var(--accent);
+        color: var(--accent-contrast);
+        border-color: transparent;
+      }
+
+      .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+        background: rgba(88, 101, 242, 0.16);
+        color: var(--accent);
+      }
+
+      .message.user .avatar {
+        background: rgba(88, 101, 242, 0.25);
+        color: var(--accent-contrast);
+      }
+
+      .input-area {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem;
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.08);
+        border-top: 1px solid var(--border);
+      }
+
+      .input-area textarea {
+        resize: none;
+        min-height: 56px;
+        max-height: 140px;
+        padding: 0.85rem 1rem;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.6);
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: 0.98rem;
+        line-height: 1.5;
+        transition: border-color 150ms ease, box-shadow 150ms ease,
+          background 200ms ease;
+      }
+
+      :root.dark .input-area textarea {
+        background: rgba(15, 23, 42, 0.6);
+      }
+
+      .input-area textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(88, 101, 242, 0.15);
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      :root.dark .input-area textarea:focus {
+        background: rgba(15, 23, 42, 0.85);
+      }
+
+      .send-btn {
+        padding: 0.9rem 1.35rem;
+        border-radius: 16px;
+        border: none;
+        background: var(--accent);
+        color: var(--accent-contrast);
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: transform 150ms ease, box-shadow 200ms ease;
+        box-shadow: 0 14px 22px rgba(88, 101, 242, 0.25);
+      }
+
+      .send-btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .send-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .typing-indicator {
+        display: none;
+        padding: 0 1.5rem 1.25rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+        gap: 0.4rem;
+        align-items: center;
+      }
+
+      .typing-indicator span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+
+      .typing-indicator span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      .typing-indicator span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      .typing-indicator.active {
+        display: inline-flex;
+      }
+
+      @keyframes pulse {
+        0%,
+        80%,
+        100% {
+          transform: scale(0.8);
+          opacity: 0.35;
+        }
+        40% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .chat-shell {
+          padding: 1.25rem;
+          gap: 1.25rem;
+        }
+
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .actions {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .chat-window {
+          min-height: 70vh;
+        }
+
+        .input-area {
+          grid-template-columns: 1fr;
+        }
+
+        .send-btn {
+          justify-self: end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-shell">
+      <header>
+        <div class="brand">
+          <h1>Sefan A.I</h1>
+          <span>Always-on conversational intelligence.</span>
+        </div>
+        <div class="actions">
+          <a class="back-link" href="index.html">← Home</a>
+          <button class="theme-toggle" id="theme-toggle" type="button">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 3v2m6.364.636-1.414 1.414M21 12h-2m-.636 6.364-1.414-1.414M12 19v2M6.364 18.364l-1.414-1.414M5 12H3m3.364-6.364L4.95 7.05"
+              />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
+            Toggle theme
+          </button>
+        </div>
+      </header>
+      <section class="chat-window">
+        <div class="chat-transcript" id="chat-transcript" aria-live="polite">
+          <div class="message ai">
+            <div class="avatar" aria-hidden="true">SA</div>
+            <div class="bubble">
+              Hey there, I’m Sefan. Ask me anything and I’ll help you think it
+              through.
+            </div>
+          </div>
+          <div class="message user">
+            <div class="bubble">
+              What can you do to support my productivity?
+            </div>
+            <div class="avatar" aria-hidden="true">You</div>
+          </div>
+          <div class="message ai">
+            <div class="avatar" aria-hidden="true">SA</div>
+            <div class="bubble">
+              I can summarize ideas, draft messages, analyze documents, and keep
+              track of action items so you can stay focused on the big picture.
+            </div>
+          </div>
+        </div>
+        <div class="typing-indicator" id="typing-indicator" aria-hidden="true">
+          Sefan is thinking
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <form class="input-area" id="chat-form" autocomplete="off">
+          <label class="sr-only" for="user-input">Your message</label>
+          <textarea
+            id="user-input"
+            name="message"
+            placeholder="Ask something or describe what you need..."
+            required
+          ></textarea>
+          <button class="send-btn" id="send-btn" type="submit">
+            Send
+          </button>
+        </form>
+      </section>
+    </div>
+    <script>
+      const root = document.documentElement;
+      const toggleButton = document.getElementById("theme-toggle");
+      const DARK_CLASS = "dark";
+      const STORAGE_KEY = "sefan-theme";
+      const form = document.getElementById("chat-form");
+      const textarea = document.getElementById("user-input");
+      const transcript = document.getElementById("chat-transcript");
+      const sendBtn = document.getElementById("send-btn");
+      const typingIndicator = document.getElementById("typing-indicator");
+
+      const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const storedTheme = localStorage.getItem(STORAGE_KEY);
+      const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />';
+      const sunIcon =
+        '<path d="M12 3v2m6.364.636-1.414 1.414M21 12h-2m-.636 6.364-1.414-1.414M12 19v2M6.364 18.364l-1.414-1.414M5 12H3m3.364-6.364L4.95 7.05" /><circle cx="12" cy="12" r="4" />';
+
+      const setToggleIcon = (isDark) => {
+        toggleButton.querySelector("svg").innerHTML = isDark ? moonIcon : sunIcon;
+      };
+
+      if (storedTheme === "dark" || (!storedTheme && preferDark)) {
+        root.classList.add(DARK_CLASS);
+      }
+
+      setToggleIcon(root.classList.contains(DARK_CLASS));
+
+      toggleButton.addEventListener("click", () => {
+        const isDark = root.classList.toggle(DARK_CLASS);
+        localStorage.setItem(STORAGE_KEY, isDark ? "dark" : "light");
+        setToggleIcon(isDark);
+      });
+
+      const suggestions = [
+        "Here’s a structured plan you can follow: 1) clarify your goal, 2) outline the tasks, 3) prioritize impact, and 4) schedule focused work blocks.",
+        "I can help by drafting an outline, surfacing relevant references, and setting reminders for your milestones.",
+        "Let’s break this down. What outcome would make this a success for you?",
+        "Consider delegating repetitive work to automations so you can reserve your time for strategy and creativity.",
+      ];
+
+      const createMessage = (role, text) => {
+        const message = document.createElement("div");
+        message.className = `message ${role}`;
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = role === "user" ? "You" : "SA";
+        avatar.setAttribute("aria-hidden", "true");
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+
+        if (role === "user") {
+          message.appendChild(bubble);
+          message.appendChild(avatar);
+        } else {
+          message.appendChild(avatar);
+          message.appendChild(bubble);
+        }
+
+        return message;
+      };
+
+      const appendMessage = (role, text) => {
+        const message = createMessage(role, text);
+        transcript.appendChild(message);
+        transcript.scrollTo({ top: transcript.scrollHeight, behavior: "smooth" });
+      };
+
+      const fakeResponse = () => {
+        const reply = suggestions[Math.floor(Math.random() * suggestions.length)];
+        appendMessage("ai", reply);
+      };
+
+      const handleSubmit = (event) => {
+        event.preventDefault();
+        const value = textarea.value.trim();
+        if (!value) return;
+
+        appendMessage("user", value);
+        textarea.value = "";
+        textarea.style.height = "";
+        textarea.focus();
+
+        sendBtn.disabled = true;
+        typingIndicator.classList.add("active");
+        typingIndicator.setAttribute("aria-hidden", "false");
+
+        setTimeout(() => {
+          typingIndicator.classList.remove("active");
+          typingIndicator.setAttribute("aria-hidden", "true");
+          fakeResponse();
+          sendBtn.disabled = false;
+        }, 900 + Math.random() * 900);
+      };
+
+      form.addEventListener("submit", handleSubmit);
+
+      textarea.addEventListener("input", () => {
+        textarea.style.height = "auto";
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 140)}px`;
+      });
+    </script>
+  </body>
+</html>
